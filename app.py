@@ -17,7 +17,6 @@ try:
     import torch
     import torchvision.transforms as transforms
     import torchvision.models as models
-    from torchvision.io import read_image
     import requests
     from torchvision.utils import save_image
     TORCH_AVAILABLE = True
@@ -39,8 +38,9 @@ if TORCH_AVAILABLE:
 
     # Download and preprocess a sample chest X-ray image
     image_url = "https://upload.wikimedia.org/wikipedia/commons/8/88/Pediatric_chest_PA_2.jpg"
-    response = requests.get(image_url, stream=True)
-    original_image = Image.open(response.raw).convert('RGB')
+    response = requests.get(image_url)
+    original_image = Image.open(io.BytesIO(response.content)).convert('RGB')
+
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
@@ -105,7 +105,15 @@ if STREAMLIT_AVAILABLE:
     ax.set_title("Robustness Curve")
     ax.legend()
     st.pyplot(fig)
-    st.download_button("Download Robustness Plot", data=io.BytesIO(fig.canvas.buffer_rgba()), file_name="robustness_curve.png")
+
+    # Helper to convert matplotlib fig to BytesIO PNG
+    def fig_to_bytes(fig):
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png")
+        buf.seek(0)
+        return buf
+
+    st.download_button("Download Robustness Plot", data=fig_to_bytes(fig), file_name="robustness_curve.png", mime="image/png")
 
     # Section 3: Confidence histogram
     st.subheader("Confidence Score Distribution")
@@ -116,7 +124,7 @@ if STREAMLIT_AVAILABLE:
     ax2.set_ylabel("Frequency")
     ax2.legend()
     st.pyplot(fig2)
-    st.download_button("Download Confidence Plot", data=io.BytesIO(fig2.canvas.buffer_rgba()), file_name="confidence_plot.png")
+    st.download_button("Download Confidence Plot", data=fig_to_bytes(fig2), file_name="confidence_plot.png", mime="image/png")
 
     # Section 4: Example image comparison (real adversarial example)
     st.subheader("Adversarial Sample Viewer")
