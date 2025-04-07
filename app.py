@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 import io
+import requests
 
 # Skip torch imports if not available
 try:
@@ -39,6 +40,24 @@ if TORCH_AVAILABLE:
     # Download and preprocess a sample chest X-ray image
     image_url = "https://upload.wikimedia.org/wikipedia/commons/8/88/Pediatric_chest_PA_2.jpg"
     response = requests.get(image_url)
+    # Check if the request was successful
+if response.status_code == 200:
+    # Check the content type of the response to verify it's an image
+    print("Response content type:", response.headers['Content-Type'])
+
+    # Check if content type is an image
+    if "image" in response.headers['Content-Type']:
+        try:
+            # Try opening the image from the byte stream
+            original_image = Image.open(io.BytesIO(response.content)).convert('RGB')
+            print("Image loaded successfully.")
+        except Exception as e:
+            print("Error loading image:", e)
+    else:
+        print("The content is not an image.")
+else:
+    print("Failed to fetch image. Status code:", response.status_code)
+    
     original_image = Image.open(io.BytesIO(response.content)).convert('RGB')
 
     transform = transforms.Compose([
